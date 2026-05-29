@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ภาษามือ — เลือกระดับ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+
+  <!-- MediaPipe -->
+  <script src="/static/mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="/static/mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="/static/mediapipe/pose/pose.js"></script>
+  <script src="/static/mediapipe/hands/hands.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     SCREEN 1 — SELECTION
+══════════════════════════════════════ -->
+<div id="screen-select" class="screen active">
+
+  <div class="panel-level">
+    <div class="label-box">เลือกระดับ</div>
+    <button class="level-btn btn-easy"   data-level="easy"   onclick="selectLevel('easy')">ระดับง่าย <span class="arrow">→</span></button>
+    <button class="level-btn btn-medium" data-level="medium" onclick="selectLevel('medium')">ระดับปานกลาง <span class="arrow">→</span></button>
+    <button class="level-btn btn-hard"   data-level="hard"   onclick="selectLevel('hard')">ระดับยาก <span class="arrow">→</span></button>
+  </div>
+
+  <div class="panel-content">
+    <div class="panel-title" id="panel-title">เลือกตัวอักษร</div>
+    <div class="content-subtitle" id="content-subtitle">พยัญชนะไทย</div>
+    <div class="items-grid" id="items-grid"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2 — SLIDESHOW
+══════════════════════════════════════ -->
+<div id="screen-slide" class="screen">
+
+  <div class="slide-bar">
+    <button class="home-btn" onclick="goHome()" title="กลับหน้าหลัก">🏠</button>
+    <button class="nav-arrow" id="btn-prev" onclick="goTo(currentIndex - 1)">←</button>
+    <div class="slide-labels" id="slide-labels"></div>
+    <button class="nav-arrow" id="btn-next" onclick="goTo(currentIndex + 1)">→</button>
+    <span class="level-badge" id="level-badge"></span>
+  </div>
+
+  <div class="slide-content-row">
+
+    <!-- Left: reference video / illustration -->
+    <div class="card card-left">
+      <div class="slide-video-wrap">
+        <div class="slide-illustration" id="slide-icon">🤟</div>
+        <div class="slide-word-display" id="slide-word"></div>
+      </div>
+    </div>
+
+    <!-- Right: camera feed + controls -->
+    <div class="card card-right">
+      <div class="camera-area">
+        <video id="camera-feed" autoplay playsinline muted></video>
+        <canvas id="tracking-canvas"></canvas>
+        <div class="camera-placeholder" id="camera-placeholder">
+          <svg viewBox="0 0 24 24">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span>CAMERA FEED</span>
+        </div>
+        <div class="rec-badge" id="rec-badge">⏺ REC</div>
+        <div class="rec-ring"  id="rec-ring"></div>
+        <div class="countdown-overlay" id="countdown-overlay"></div>
+        <div class="processing-overlay" id="processing-overlay">
+          <div class="processing-spinner"></div>
+          <div class="processing-text">กำลังวิเคราะห์…</div>
+        </div>
+      </div>
+
+      <div class="progress-dots" id="progress-dots"></div>
+
+      <div class="btn-row">
+        <button class="connect-btn" id="connect-btn" onclick="handleCameraToggle()">เชื่อมต่อกล้อง</button>
+        <button class="record-btn"  id="record-btn"  onclick="handleRecord()" disabled>
+          <span class="rec-icon" id="rec-icon">⏺</span>
+          <span id="rec-label">บันทึก</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3 — RESULT
+══════════════════════════════════════ -->
+<div id="screen-result" class="screen">
+  <div class="result-container fade-in">
+
+    <div class="result-header">
+      <button class="retry-btn" onclick="retrySign()">↩ ลองใหม่</button>
+      <div class="result-title" id="result-title">ผลการวิเคราะห์ภาษามือ</div>
+      <button class="retry-btn" onclick="goHome()" style="background:var(--muted)">🏠 หน้าหลัก</button>
+    </div>
+
+    <div class="score-card" id="score-card">
+      <div class="score-ring-wrap">
+        <svg class="score-ring" viewBox="0 0 120 120">
+          <circle class="ring-bg"   cx="60" cy="60" r="50"/>
+          <circle class="ring-fill" cx="60" cy="60" r="50" id="ring-fill"/>
+        </svg>
+        <div class="score-number" id="score-number">—</div>
+      </div>
+      <div class="score-label-box">
+        <div class="score-grade" id="score-grade">—</div>
+        <div class="score-desc"  id="score-desc">กำลังวิเคราะห์…</div>
+      </div>
+    </div>
+
+    <div class="result-video-row" style="grid-template-columns: 1fr;">
+      <div class="result-vid-card">
+        <div class="vid-label">🎥 วิดีโอบันทึก (กล้อง + โครงกระดูก)</div>
+        <div class="vid-wrap" id="feedback-wrap">
+          <div class="vid-placeholder" id="feedback-placeholder" style="display:none"></div>
+          <video id="result-feedback-video" controls playsinline style="display:none; width:100%; height:100%; object-fit:contain;"></video>
+        </div>
+        <div class="result-playback-bar">
+          <button class="play-btn" onclick="document.getElementById('result-feedback-video').play()">▶ เล่น</button>
+          <div class="result-progress-wrap"><div class="result-progress-bar" id="feedback-progress"></div></div>
+          <span class="result-time" id="feedback-time">0:00</span>
+          <a id="download-feedback-btn" class="play-btn" style="text-decoration:none; display:none" download>⬇ ดาวน์โหลด</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="error-summary" id="error-summary">
+      <div class="error-summary-title">⚠ ข้อต่อที่มีข้อผิดพลาดบ่อย</div>
+      <div class="error-chips" id="error-chips"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Scripts — state must load first, mediapipe second, app last -->
+<script src="/static/state.js"></script>
+<script src="/static/mediapipe.js"></script>
+<script src="/static/app.js"></script>
+
+</body>
+</html>
