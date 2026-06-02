@@ -4,6 +4,19 @@
 
 ---
 
+## 🖥️ ภาพรวมของหน้าต่างการใช้งาน (Screenshots)
+
+### 1. หน้าแรก (Home Screen) — เลือกระดับและตัวอักษร
+![Home Page](homePage.png)
+
+### 2. หน้าฝึกซ้อม (Processing Screen) — แนะนำท่าทางและบันทึกวิดีโอจากกล้อง
+![Process Page](processPage.png)
+
+### 3. หน้าผลลัพธ์ (Feedback Screen) — ตรวจสอบคะแนนและวิดีโอวิเคราะห์ข้อผิดพลาด
+![Feedback Page](feedbackPage.png)
+
+---
+ 
 ## ✨ ฟีเจอร์หลัก
 
 - เลือกระดับ **ง่าย / ปานกลาง / ยาก** (พยัญชนะ, ตัวเลข, คำ, ประโยค)
@@ -85,7 +98,8 @@ pip install fastapi uvicorn opencv-python mediapipe fastdtw numpy
 ### รัน Web App
 
 ```bash
-python main.py
+# python main.py
+uvicorn main:app --reload 
 ```
 
 จากนั้นเปิด browser ที่ `http://localhost:8000`
@@ -247,6 +261,3 @@ Render feedback video (skeleton สีแดง/เขียว)
 
 ---
 
-## 📄 License
-
-สงวนลิขสิทธิ์ — สำหรับใช้ภายในโครงการ
